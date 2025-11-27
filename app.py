@@ -7,11 +7,7 @@ from typing import Any, Dict, List, Optional
 import google.generativeai as genai
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
-from dotenv import load_dotenv
 
-# Load environment variables from local files if present
-load_dotenv()
-load_dotenv(".env.local")
 
 st.set_page_config(
     page_title="BladeGuard AI – Streamlit",
@@ -125,9 +121,9 @@ RESPONSE_SCHEMA: Dict[str, Any] = {
 
 
 def _get_api_key() -> str:
-    key = os.getenv("GEMINI_API_KEY") or os.getenv("API_KEY")
+    key = st.session_state.get("api_key")
     if not key:
-        raise RuntimeError("Add GEMINI_API_KEY or API_KEY to your environment to run analysis.")
+        raise RuntimeError("Provide a Gemini API key to run analysis.")
     return key
 
 
@@ -338,6 +334,8 @@ def main():
         st.session_state.image_bytes = None
     if "mime_type" not in st.session_state:
         st.session_state.mime_type = None
+    if "api_key" not in st.session_state:
+        st.session_state.api_key = os.getenv("GEMINI_API_KEY") or os.getenv("API_KEY") or ""
 
     _render_header()
     st.write("")
@@ -346,6 +344,14 @@ def main():
 
     with left:
         st.markdown("### Image Input")
+        api_key_input = st.text_input(
+            "Gemini API Key",
+            value=st.session_state.api_key,
+            type="password",
+            help="Key is kept only in this session and used to call Gemini.",
+        )
+        st.session_state.api_key = api_key_input
+
         uploaded = st.file_uploader(
             "Upload a blade image (JPG, PNG, WEBP up to 10MB)",
             type=["png", "jpg", "jpeg", "webp"],
